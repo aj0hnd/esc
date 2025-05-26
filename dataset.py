@@ -45,9 +45,9 @@ class CustomDatasetPath(Dataset):
 
 class InputPipeLineBuilder:
     dataset_dir = {
-        'cifar10': '../data/cifar10',
-        'cifar100': '../data/cifar100',
-        'tiny_imagenet': '../data/tiny_imagenet'
+        'cifar10': './data/cifar10',
+        'cifar100': './data/cifar100',
+        'tiny_imagenet': './data/tiny_imagenet'
     }
     
     def __init__(
@@ -103,7 +103,7 @@ class InputPipeLineBuilder:
                 forget_train_x = train_ds.data[mask]
                 forget_train_y = np.array(train_ds.targets)[mask]
                 forget_train_x, forget_valid_x, forget_train_y, forget_valid_y = train_test_split(forget_train_x, forget_train_y, 
-                                                                                                  test_size=valid_size, shuffle=True)
+                                                                                                  test_size=self.valid_size, shuffle=True)
                 
                 retain_train_x = train_ds.data[~mask]
                 retain_train_y = np.array(train_ds.targets)[~mask]

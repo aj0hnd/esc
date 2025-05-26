@@ -10,7 +10,7 @@ from network import AllCNN, ResNet, ViT
 class ESC(nn.Module):
     def __init__(
         self,
-        p: float,
+        p: float = 0.017,
         num_classes: int = 10,
         use_pretrain: bool = True,
         model_type: Literal['all_cnn', 'resnet', 'vit'] = 'all_cnn',
@@ -27,7 +27,7 @@ class ESC(nn.Module):
         if model_type == 'all_cnn':
             self.model_check_dir = './prepare/all_cnn_pretrained.pth' if use_pretrain else './prepare/all_cnn_retrained.pth'
             
-            model = AllCNN(num_classes=num_classes)
+            model = AllCNN(self.device, num_classes=num_classes)
             model.load_state_dict(torch.load(self.model_check_dir, map_location=self.device))
             
             self.feature_extractor = model.feature_extractor
@@ -36,7 +36,7 @@ class ESC(nn.Module):
         elif model_type == 'resnet':
             self.model_check_dir = './prepare/resnet_pretrained.pth' if use_pretrain else './prepare/resnet_retrained.pth'
             
-            model = ResNet(num_classes=num_classes)
+            model = ResNet(self.device, num_classes=num_classes)
             model.load_state_dict(torch.load(self.model_check_dir, map_location=self.device))
             
             self.feature_extractor = model.feature_extractor
@@ -45,7 +45,7 @@ class ESC(nn.Module):
         elif model_type == 'vit':
             self.model_check_dir = './prepare/vit_pretrained.pth' if use_pretrain else './prepare/vit_retrained.pth'
             
-            model = ViT()
+            model = ViT(self.device)
             model.load_state_dict(torch.load(self.model_check_dir, map_location=self.device))
             
             self.feature_extractor = model.feature_extractor
@@ -56,25 +56,25 @@ class ESC(nn.Module):
         self.up = None
     
     def get_up_matrix(self, dataloader):
-        all_features = []
+        all_activations = []
         for batch in tqdm(dataloader):
             batch_x, batch_y = batch
             with torch.no_grad():
-                features = self.feature_extractor(batch_x)
+                activation = self.feature_extractor(batch_x)
             
-            all_features += [features]
+            all_activations += [activation]
         
-        all_features = torch.cat([*all_features], dim=0)
-        U, _, _ = torch.linalg.svd(all_features.T, full_matrices=False)
+        all_activations = torch.cat([*all_activations], dim=0)
+        U, _, _ = torch.linalg.svd(all_activations.T, full_matrices=False)
         
         self.u = U
-        self.up = U[:, self.k]            
-        print("\n\tDone")
+        self.up = U[:, self.k:]            
+        print(f"\tMade Up matrix with p: {self.p}.\n")
     
     def forward(self, x):
         with torch.no_grad():
             x = self.feature_extractor(x)
-            
+        
             if self.model_type == 'vit':
                 x = x.pooler_output
             
